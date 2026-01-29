@@ -1,8 +1,4 @@
-use axum::{
-    extract::Path,
-    http::{StatusCode, header},
-    response::{IntoResponse, Response},
-};
+use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 use std::{env::current_dir, path::PathBuf};
 
 pub async fn root() -> &'static str {
