@@ -1,53 +1,126 @@
-use axum::{
-    Router,
-    extract::Path,
-    http::header,
-    response::{IntoResponse, Response},
-    routing::get,
-};
-use std::{fs, path::PathBuf};
+use axum::{Router, routing::get};
+use tokio::net::TcpListener;
+
+mod handlers;
 
 #[tokio::main]
 async fn main() {
-    // initialize tracing
-    tracing_subscriber::fmt::init();
+    let app = create_app();
 
-    // build our application with a route
-    let app = Router::new()
-        // `GET /` goes to `root`
-        .route("/", get(root))
-        .route("/about", get(about))
-        .route("/users/{name}", get(user))
-        .route("/static/{*path}", get(file));
-
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn root() -> &'static str {
-    "Hello World"
+fn create_app() -> Router {
+    Router::new()
+        .route("/", get(handlers::root))
+        .route("/about", get(handlers::about))
+        .route("/name/{name}", get(handlers::name))
+        .route("/static/{file_name}", get(handlers::file))
 }
 
-async fn about() -> &'static str {
-    "About Hello World"
-}
+#[cfg(test)]
+mod tests {
+    use axum::{body::Body, extract::Request, http::StatusCode};
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
 
-async fn user(Path(name): Path<String>) -> String {
-    name
-}
+    use super::*;
 
-async fn file(Path(path): Path<PathBuf>) -> Response {
-    let path_str = PathBuf::from("./static").join(&path);
+    #[tokio::test]
+    async fn test_root() {
+        let app = create_app();
 
-    let content_type = match path.extension().and_then(|f| f.to_str()) {
-        Some("html") => "text/html",
-        Some("css") => "text/css",
-        Some("js") => "application/javascript",
-        _ => "text/plain",
-    };
+        let response = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
 
-    match fs::read_to_string(path_str) {
-        Ok(content) => ([(header::CONTENT_TYPE, content_type)], content).into_response(),
-        Err(_) => (axum::http::StatusCode::NOT_FOUND, "404 Not Found").into_response(),
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"Hello World");
+    }
+
+    #[tokio::test]
+    async fn test_about() {
+        let app = create_app();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/about")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"About");
+    }
+
+    #[tokio::test]
+    async fn test_name() {
+        let app = create_app();
+        let first_request = Request::builder()
+            .uri("/name/foo")
+            .body(Body::empty())
+            .unwrap();
+        let second_request = Request::builder()
+            .uri("/name/bar")
+            .body(Body::empty())
+            .unwrap();
+
+        let first_response = app.clone().oneshot(first_request).await.unwrap();
+        let second_response = app.clone().oneshot(second_request).await.unwrap();
+
+        assert_eq!(first_response.status(), StatusCode::OK);
+        assert_eq!(second_response.status(), StatusCode::OK);
+
+        let first_body = first_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
+        let second_body = second_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
+        assert_eq!(&first_body[..], b"foo");
+        assert_eq!(&second_body[..], b"bar");
+    }
+
+    #[tokio::test]
+    async fn test_file() {
+        let app = create_app();
+        let expected_result = tokio::fs::read("static/style.css").await.unwrap();
+
+        // Valid Request
+        let first_request = Request::builder()
+            .uri("/static/style.css")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.clone().oneshot(first_request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], expected_result);
+
+        // Invalid Request
+        let invalid_request = Request::builder()
+            .uri("/static/test.test")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.clone().oneshot(invalid_request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"File Not Found");
     }
 }

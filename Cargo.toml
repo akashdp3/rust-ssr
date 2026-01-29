@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.100"
 axum = "0.8.8"
+boa_engine = "0.21.0"
 tokio = { version = "1.49.0", features = ["full"] }
 tracing-subscriber = "0.3.22"
+tower = { version = "0.4", features=["util"] }
+http-body-util = "0.1"

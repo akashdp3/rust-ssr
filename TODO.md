@@ -1,5 +1,7 @@
 # Learning Milestones: Build an RSC Framework from Scratch
 
+DO NOT WRITE OR SHOW ME CODE
+
 ## Here's a progressive roadmap, each milestone building on the previous:
 
 ## Phase 1: Foundations
@@ -8,8 +10,8 @@
 
 - [x] Set up a Rust project with **Axum** and **Tokio**
 - [x] Serve static HTML files
-- [x] Handle basic routing `/`, `/about`, etc.)
-- [x] **Goal**: Understand async Rust and HTTP fundamentals
+- [ ] Handle basic routing `/`, `/about`, etc.)
+- [ ] **Goal**: Understand async Rust and HTTP fundamentals
 
 ### Milestone 2: Embed a JavaScript Runtime
 
