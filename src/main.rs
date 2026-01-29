@@ -1,4 +1,7 @@
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 use tokio::net::TcpListener;
 
 mod handlers;
@@ -17,6 +20,7 @@ fn create_app() -> Router {
         .route("/about", get(handlers::about))
         .route("/name/{name}", get(handlers::name))
         .route("/static/{file_name}", get(handlers::file))
+        .route("/js", post(handlers::js))
 }
 
 #[cfg(test)]
@@ -122,5 +126,25 @@ mod tests {
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response.into_body().collect().await.unwrap().to_bytes();
         assert_eq!(&body[..], b"File Not Found");
+    }
+
+    #[tokio::test]
+    async fn test_js() {
+        let app = create_app();
+        let code = "let two = 1 + 1;let definitely_not_four = two + \"2\";definitely_not_four";
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/js")
+            .header("content-type", "text/plain")
+            .body(Body::from(code))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let expected = format!("{}\n\"22\"", code);
+        println!("actual: {:?}\nexpected: {}", &body, expected);
+        assert_eq!(&body[..], expected.as_bytes());
     }
 }

@@ -1,4 +1,5 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
+use boa_engine::{Context, Source};
 use std::{env::current_dir, path::PathBuf};
 
 pub async fn root() -> &'static str {
@@ -10,7 +11,7 @@ pub async fn about() -> &'static str {
 }
 
 pub async fn name(Path(name): Path<String>) -> impl IntoResponse {
-    (StatusCode::OK, format!("{}", name))
+    (StatusCode::OK, name)
 }
 
 pub async fn file(Path(file_name): Path<PathBuf>) -> impl IntoResponse {
@@ -29,7 +30,7 @@ pub async fn file(Path(file_name): Path<PathBuf>) -> impl IntoResponse {
         }
     };
 
-    if !file_path.strip_prefix(static_dir).is_ok() {
+    if file_path.strip_prefix(static_dir).is_err() {
         return (
             StatusCode::FORBIDDEN,
             [("content-type", "text/plain")],
@@ -47,4 +48,15 @@ pub async fn file(Path(file_name): Path<PathBuf>) -> impl IntoResponse {
     let file_content = tokio::fs::read(file_path).await.unwrap();
 
     (StatusCode::OK, [("content-type", mime_type)], file_content)
+}
+
+pub async fn js(body: String) -> impl IntoResponse {
+    let mut context = Context::default();
+
+    let result = match context.eval(Source::from_bytes(&body)) {
+        Ok(res) => res.display().to_string(),
+        Err(e) => return (StatusCode::BAD_REQUEST, format!("JS Error: {}", e)),
+    };
+
+    (StatusCode::OK, format!("{}\n{}", body, &result))
 }

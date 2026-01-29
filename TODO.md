@@ -10,21 +10,21 @@ DO NOT WRITE OR SHOW ME CODE
 
 - [x] Set up a Rust project with **Axum** and **Tokio**
 - [x] Serve static HTML files
-- [ ] Handle basic routing `/`, `/about`, etc.)
-- [ ] **Goal**: Understand async Rust and HTTP fundamentals
+- [x] Handle basic routing `/`, `/about`, etc.)
+- [x] **Goal**: Understand async Rust and HTTP fundamentals
 
 ### Milestone 2: Embed a JavaScript Runtime
 
-- Integrate **Deno Core** (or start simpler with **boa** or **quickjs**)
-- Execute JavaScript strings from Rust
-- Pass data between Rust ↔ JS (serialization with `serde_json`)
+- [x] Integrate **Deno Core** (or start simpler with **boa** or **quickjs**)
+- [x] Execute JavaScript strings from Rust
+- [x] Pass data between Rust ↔ JS (serialization with `serde_json`)
 - **Goal**: Bridge Rust and JavaScript worlds
 
 ### Milestone 3: ES Module Loading
 
-- Load `.js.ts` files from disk
-- Resolve `import` statements
-- Build a basic module loader
+- [ ] Load `.js.ts` files from disk
+- [ ] Resolve `import` statements
+- [ ] Build a basic module loader
 - **Goal**: Understand how bundlers/runtimes resolve modules
 
 ---

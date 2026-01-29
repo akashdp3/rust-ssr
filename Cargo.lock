@@ -1124,6 +1124,7 @@ dependencies = [
  "axum",
  "boa_engine",
  "http-body-util",
+ "serde",
  "tokio",
  "tower 0.4.13",
  "tracing-subscriber",
